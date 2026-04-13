@@ -4,7 +4,7 @@
 
 A lightweight, zero-dependency screen recorder that runs entirely in your browser. No installs, no sign-ups, no servers. Just open and record.
 
-[**Try it live →**](https://yourusername.github.io/capturely)
+[**Try it live →**](https://anikm1987.github.io/capturely)
 
 ---
 
