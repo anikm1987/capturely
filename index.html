@@ -10,18 +10,18 @@
   *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
   :root {
-    --bg: #0a0a0f;
-    --surface: #13131a;
-    --surface-raised: #1a1a24;
-    --border: #2a2a3a;
-    --text: #e8e8f0;
-    --text-muted: #8888a0;
-    --accent: #ff4d6a;
-    --accent-glow: rgba(255, 77, 106, 0.25);
-    --accent-soft: rgba(255, 77, 106, 0.08);
-    --green: #34d399;
-    --green-glow: rgba(52, 211, 153, 0.25);
-    --blue: #60a5fa;
+    --bg: #f4f0ec;
+    --surface: #ffffff;
+    --surface-raised: #f0edf8;
+    --border: #e0daea;
+    --text: #1e1e2e;
+    --text-muted: #6b6580;
+    --accent: #e83e5a;
+    --accent-glow: rgba(232, 62, 90, 0.2);
+    --accent-soft: rgba(232, 62, 90, 0.06);
+    --green: #0d9668;
+    --green-glow: rgba(13, 150, 104, 0.18);
+    --blue: #3b6df0;
     --radius: 16px;
     --radius-sm: 10px;
   }
@@ -44,7 +44,7 @@
     position: fixed;
     top: -40%; left: -20%;
     width: 80vw; height: 80vw;
-    background: radial-gradient(circle, rgba(255,77,106,0.06) 0%, transparent 60%);
+    background: radial-gradient(circle, rgba(232,62,90,0.07) 0%, transparent 60%);
     pointer-events: none;
     z-index: 0;
   }
@@ -53,7 +53,7 @@
     position: fixed;
     bottom: -30%; right: -20%;
     width: 70vw; height: 70vw;
-    background: radial-gradient(circle, rgba(96,165,250,0.05) 0%, transparent 60%);
+    background: radial-gradient(circle, rgba(59,109,240,0.07) 0%, transparent 60%);
     pointer-events: none;
     z-index: 0;
   }
@@ -99,7 +99,7 @@
     border: 1px solid var(--border);
     border-radius: var(--radius);
     padding: 32px;
-    backdrop-filter: blur(20px);
+    box-shadow: 0 4px 24px rgba(30, 30, 46, 0.06), 0 1px 3px rgba(30, 30, 46, 0.04);
   }
 
   /* Status area */
@@ -159,7 +159,7 @@
   .countdown-overlay {
     position: fixed;
     inset: 0;
-    background: rgba(10,10,15,0.85);
+    background: rgba(244,240,236,0.88);
     backdrop-filter: blur(10px);
     display: flex;
     align-items: center;
@@ -209,11 +209,11 @@
     transition: all 0.2s;
     user-select: none;
   }
-  .toggle-btn:hover { border-color: #444; color: var(--text); }
+  .toggle-btn:hover { border-color: #c0b8d0; color: var(--text); }
   .toggle-btn.active {
     color: var(--green);
-    border-color: rgba(52,211,153,0.4);
-    background: rgba(52,211,153,0.06);
+    border-color: rgba(13,150,104,0.35);
+    background: rgba(13,150,104,0.07);
   }
   .toggle-btn svg { width: 16px; height: 16px; }
 
@@ -254,14 +254,14 @@
     color: var(--text);
     border: 1px solid var(--border);
   }
-  .btn-secondary:hover { border-color: #555; background: #222230; }
+  .btn-secondary:hover { border-color: #c0b8d0; background: #ece8f4; }
 
   .btn-stop { background: #dc2626; box-shadow: 0 0 20px rgba(220,38,38,0.2); color: #fff; }
   .btn-stop:hover { background: #ef4444; }
 
   .btn-download {
     background: var(--green);
-    color: #0a0a0f;
+    color: #ffffff;
     box-shadow: 0 0 20px var(--green-glow);
   }
   .btn-download:hover { transform: translateY(-1px); }
@@ -286,7 +286,7 @@
     width: 100%;
     border-radius: var(--radius-sm);
     border: 1px solid var(--border);
-    background: #000;
+    background: #1e1e2e;
   }
 
   /* Share bar */
