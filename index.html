@@ -1,0 +1,694 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Capturely — Record & Share Screen Demos</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,500;0,9..40,700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --bg: #0a0a0f;
+    --surface: #13131a;
+    --surface-raised: #1a1a24;
+    --border: #2a2a3a;
+    --text: #e8e8f0;
+    --text-muted: #8888a0;
+    --accent: #ff4d6a;
+    --accent-glow: rgba(255, 77, 106, 0.25);
+    --accent-soft: rgba(255, 77, 106, 0.08);
+    --green: #34d399;
+    --green-glow: rgba(52, 211, 153, 0.25);
+    --blue: #60a5fa;
+    --radius: 16px;
+    --radius-sm: 10px;
+  }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+  }
+
+  /* Ambient background */
+  body::before {
+    content: '';
+    position: fixed;
+    top: -40%; left: -20%;
+    width: 80vw; height: 80vw;
+    background: radial-gradient(circle, rgba(255,77,106,0.06) 0%, transparent 60%);
+    pointer-events: none;
+    z-index: 0;
+  }
+  body::after {
+    content: '';
+    position: fixed;
+    bottom: -30%; right: -20%;
+    width: 70vw; height: 70vw;
+    background: radial-gradient(circle, rgba(96,165,250,0.05) 0%, transparent 60%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .app {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    max-width: 520px;
+    padding: 20px;
+  }
+
+  /* Header */
+  .logo {
+    text-align: center;
+    margin-bottom: 40px;
+  }
+  .logo h1 {
+    font-family: 'Space Mono', monospace;
+    font-size: 1.6rem;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .logo h1 .dot {
+    width: 10px; height: 10px;
+    background: var(--accent);
+    border-radius: 50%;
+    display: inline-block;
+  }
+  .logo p {
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    margin-top: 6px;
+    letter-spacing: 0.3px;
+  }
+
+  /* Card */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 32px;
+    backdrop-filter: blur(20px);
+  }
+
+  /* Status area */
+  .status {
+    text-align: center;
+    margin-bottom: 28px;
+  }
+  .status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-family: 'Space Mono', monospace;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: var(--text-muted);
+    padding: 6px 14px;
+    background: var(--surface-raised);
+    border-radius: 100px;
+    border: 1px solid var(--border);
+  }
+  .status-badge .indicator {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: var(--text-muted);
+  }
+  .status-badge.recording .indicator {
+    background: var(--accent);
+    animation: pulse 1.2s ease-in-out infinite;
+  }
+  .status-badge.paused .indicator {
+    background: #f59e0b;
+  }
+  .status-badge.recording { color: var(--accent); border-color: rgba(255,77,106,0.3); }
+  .status-badge.paused { color: #f59e0b; border-color: rgba(245,158,11,0.3); }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.4; transform: scale(0.7); }
+  }
+
+  /* Timer */
+  .timer {
+    font-family: 'Space Mono', monospace;
+    font-size: 3.2rem;
+    font-weight: 700;
+    text-align: center;
+    letter-spacing: 2px;
+    margin: 20px 0;
+    color: var(--text);
+    transition: color 0.3s;
+  }
+  .timer.active { color: var(--accent); }
+  .timer.paused-state { color: #f59e0b; }
+
+  /* Countdown overlay */
+  .countdown-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(10,10,15,0.85);
+    backdrop-filter: blur(10px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s;
+  }
+  .countdown-overlay.visible {
+    opacity: 1;
+    pointer-events: all;
+  }
+  .countdown-number {
+    font-family: 'Space Mono', monospace;
+    font-size: 8rem;
+    font-weight: 700;
+    color: var(--accent);
+    animation: countPop 0.6s ease-out;
+  }
+  @keyframes countPop {
+    0% { transform: scale(1.6); opacity: 0; }
+    50% { transform: scale(0.95); opacity: 1; }
+    100% { transform: scale(1); opacity: 1; }
+  }
+
+  /* Mic toggle */
+  .options {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    margin-bottom: 28px;
+  }
+  .toggle-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.82rem;
+    font-weight: 500;
+    color: var(--text-muted);
+    background: var(--surface-raised);
+    border: 1px solid var(--border);
+    border-radius: 100px;
+    cursor: pointer;
+    transition: all 0.2s;
+    user-select: none;
+  }
+  .toggle-btn:hover { border-color: #444; color: var(--text); }
+  .toggle-btn.active {
+    color: var(--green);
+    border-color: rgba(52,211,153,0.4);
+    background: rgba(52,211,153,0.06);
+  }
+  .toggle-btn svg { width: 16px; height: 16px; }
+
+  /* Action buttons */
+  .actions {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 14px 28px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.9rem;
+    font-weight: 600;
+    border: none;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: all 0.2s;
+    text-decoration: none;
+  }
+  .btn svg { width: 18px; height: 18px; }
+
+  .btn-primary {
+    background: var(--accent);
+    color: #fff;
+    box-shadow: 0 0 30px var(--accent-glow), inset 0 1px 0 rgba(255,255,255,0.15);
+  }
+  .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 0 40px var(--accent-glow); }
+  .btn-primary:active { transform: translateY(0); }
+
+  .btn-secondary {
+    background: var(--surface-raised);
+    color: var(--text);
+    border: 1px solid var(--border);
+  }
+  .btn-secondary:hover { border-color: #555; background: #222230; }
+
+  .btn-stop { background: #dc2626; box-shadow: 0 0 20px rgba(220,38,38,0.2); color: #fff; }
+  .btn-stop:hover { background: #ef4444; }
+
+  .btn-download {
+    background: var(--green);
+    color: #0a0a0f;
+    box-shadow: 0 0 20px var(--green-glow);
+  }
+  .btn-download:hover { transform: translateY(-1px); }
+
+  .btn:disabled { opacity: 0.35; cursor: not-allowed; pointer-events: none; }
+
+  /* Preview video */
+  .preview-section {
+    margin-top: 24px;
+    display: none;
+  }
+  .preview-section.visible { display: block; }
+  .preview-label {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: var(--text-muted);
+    margin-bottom: 10px;
+  }
+  .preview-video {
+    width: 100%;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border);
+    background: #000;
+  }
+
+  /* Share bar */
+  .share-bar {
+    display: none;
+    gap: 10px;
+    margin-top: 16px;
+    justify-content: center;
+  }
+  .share-bar.visible { display: flex; }
+
+  /* Footer */
+  .footer {
+    text-align: center;
+    margin-top: 32px;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    letter-spacing: 0.3px;
+  }
+  .footer a { color: var(--blue); text-decoration: none; }
+  .footer a:hover { text-decoration: underline; }
+
+  /* Fade in */
+  .app { animation: fadeUp 0.6s ease-out; }
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* Responsive */
+  @media (max-width: 480px) {
+    .timer { font-size: 2.4rem; }
+    .card { padding: 24px 18px; }
+    .btn { padding: 12px 20px; font-size: 0.84rem; }
+  }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <div class="logo">
+    <h1><span class="dot"></span> Capturely</h1>
+    <p>Record screen demos with voice — instantly.</p>
+  </div>
+
+  <div class="card">
+    <!-- Status -->
+    <div class="status">
+      <span class="status-badge" id="statusBadge">
+        <span class="indicator"></span>
+        <span id="statusText">Ready</span>
+      </span>
+    </div>
+
+    <!-- Timer -->
+    <div class="timer" id="timer">00:00</div>
+
+    <!-- Options -->
+    <div class="options" id="optionsBar">
+      <button class="toggle-btn active" id="micToggle" onclick="toggleMic()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+          <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+          <line x1="12" y1="19" x2="12" y2="23"/>
+          <line x1="8" y1="23" x2="16" y2="23"/>
+        </svg>
+        Mic On
+      </button>
+      <button class="toggle-btn" id="sysAudioToggle" onclick="toggleSysAudio()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+          <path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>
+          <path d="M19.07 4.93a10 10 0 0 1 0 14.14"/>
+        </svg>
+        Tab Audio
+      </button>
+    </div>
+
+    <!-- Actions -->
+    <div class="actions" id="actions">
+      <button class="btn btn-primary" id="startBtn" onclick="startCapture()">
+        <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="7"/></svg>
+        Start Recording
+      </button>
+    </div>
+
+    <!-- Preview -->
+    <div class="preview-section" id="previewSection">
+      <div class="preview-label">Preview</div>
+      <video class="preview-video" id="previewVideo" controls playsinline></video>
+    </div>
+
+    <!-- Share bar -->
+    <div class="share-bar" id="shareBar">
+      <button class="btn btn-download" id="downloadBtn" onclick="downloadRecording()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+          <polyline points="7 10 12 15 17 10"/>
+          <line x1="12" y1="15" x2="12" y2="3"/>
+        </svg>
+        Download
+      </button>
+      <button class="btn btn-secondary" id="shareBtn" onclick="shareRecording()" style="display:none;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
+          <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/>
+          <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
+        </svg>
+        Share
+      </button>
+      <button class="btn btn-secondary" onclick="resetApp()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/>
+        </svg>
+        New
+      </button>
+    </div>
+  </div>
+
+  <div class="footer">
+    Built with Capturely — open source & runs in your browser.
+  </div>
+</div>
+
+<!-- Countdown overlay -->
+<div class="countdown-overlay" id="countdownOverlay">
+  <div class="countdown-number" id="countdownNum">3</div>
+</div>
+
+<script>
+  let mediaRecorder = null;
+  let recordedChunks = [];
+  let timerInterval = null;
+  let startTime = 0;
+  let pausedTime = 0;
+  let elapsedBeforePause = 0;
+  let micEnabled = true;
+  let sysAudioEnabled = false;
+  let recordingBlob = null;
+  let screenStream = null;
+  let micStream = null;
+
+  // Check Web Share API
+  if (navigator.canShare) {
+    document.getElementById('shareBtn').style.display = '';
+  }
+
+  function toggleMic() {
+    micEnabled = !micEnabled;
+    const btn = document.getElementById('micToggle');
+    btn.classList.toggle('active', micEnabled);
+    btn.innerHTML = micEnabled
+      ? `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>Mic On`
+      : `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="1" y1="1" x2="23" y2="23"/><path d="M9 9v3a3 3 0 0 0 5.12 2.12M15 9.34V4a3 3 0 0 0-5.94-.6"/><path d="M17 16.95A7 7 0 0 1 5 12v-2m14 0v2c0 .76-.13 1.49-.35 2.17"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>Mic Off`;
+  }
+
+  function toggleSysAudio() {
+    sysAudioEnabled = !sysAudioEnabled;
+    const btn = document.getElementById('sysAudioToggle');
+    btn.classList.toggle('active', sysAudioEnabled);
+  }
+
+  async function startCapture() {
+    try {
+      // Request screen capture
+      screenStream = await navigator.mediaDevices.getDisplayMedia({
+        video: { cursor: "always" },
+        audio: sysAudioEnabled
+      });
+
+      // Request mic if enabled
+      if (micEnabled) {
+        try {
+          micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        } catch (e) {
+          console.warn('Mic access denied, continuing without mic.');
+          micStream = null;
+        }
+      }
+
+      // Countdown
+      await doCountdown();
+
+      // Combine streams
+      const tracks = [...screenStream.getVideoTracks()];
+      // Combine audio tracks
+      const audioCtx = new AudioContext();
+      const dest = audioCtx.createMediaStreamDestination();
+      let hasAudio = false;
+
+      if (screenStream.getAudioTracks().length > 0) {
+        const sysSource = audioCtx.createMediaStreamSource(new MediaStream(screenStream.getAudioTracks()));
+        sysSource.connect(dest);
+        hasAudio = true;
+      }
+      if (micStream) {
+        const micSource = audioCtx.createMediaStreamSource(micStream);
+        micSource.connect(dest);
+        hasAudio = true;
+      }
+
+      if (hasAudio) {
+        tracks.push(...dest.stream.getAudioTracks());
+      }
+
+      const combinedStream = new MediaStream(tracks);
+
+      // Start recording
+      recordedChunks = [];
+      const mimeType = MediaRecorder.isTypeSupported('video/webm;codecs=vp9,opus')
+        ? 'video/webm;codecs=vp9,opus'
+        : 'video/webm';
+      mediaRecorder = new MediaRecorder(combinedStream, { mimeType });
+
+      mediaRecorder.ondataavailable = (e) => {
+        if (e.data.size > 0) recordedChunks.push(e.data);
+      };
+
+      mediaRecorder.onstop = () => {
+        recordingBlob = new Blob(recordedChunks, { type: mimeType });
+        showPreview();
+      };
+
+      // Handle user stopping screen share via browser UI
+      screenStream.getVideoTracks()[0].onended = () => {
+        if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+          stopRecording();
+        }
+      };
+
+      mediaRecorder.start(200);
+      elapsedBeforePause = 0;
+      startTime = Date.now();
+      startTimer();
+      setRecordingUI();
+
+    } catch (err) {
+      console.error('Capture error:', err);
+      cleanup();
+    }
+  }
+
+  function doCountdown() {
+    return new Promise((resolve) => {
+      const overlay = document.getElementById('countdownOverlay');
+      const num = document.getElementById('countdownNum');
+      overlay.classList.add('visible');
+      let count = 3;
+      num.textContent = count;
+      // Re-trigger animation
+      num.style.animation = 'none';
+      void num.offsetWidth;
+      num.style.animation = '';
+
+      const interval = setInterval(() => {
+        count--;
+        if (count <= 0) {
+          clearInterval(interval);
+          overlay.classList.remove('visible');
+          resolve();
+        } else {
+          num.textContent = count;
+          num.style.animation = 'none';
+          void num.offsetWidth;
+          num.style.animation = '';
+        }
+      }, 800);
+    });
+  }
+
+  function setRecordingUI() {
+    const badge = document.getElementById('statusBadge');
+    badge.className = 'status-badge recording';
+    document.getElementById('statusText').textContent = 'Recording';
+    document.getElementById('timer').className = 'timer active';
+    document.getElementById('optionsBar').style.display = 'none';
+    document.getElementById('previewSection').classList.remove('visible');
+    document.getElementById('shareBar').classList.remove('visible');
+    document.getElementById('actions').innerHTML = `
+      <button class="btn btn-secondary" onclick="pauseRecording()">
+        <svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
+        Pause
+      </button>
+      <button class="btn btn-stop" onclick="stopRecording()">
+        <svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="1"/></svg>
+        Stop
+      </button>
+    `;
+  }
+
+  function pauseRecording() {
+    if (!mediaRecorder || mediaRecorder.state !== 'recording') return;
+    mediaRecorder.pause();
+    elapsedBeforePause += Date.now() - startTime;
+    clearInterval(timerInterval);
+
+    const badge = document.getElementById('statusBadge');
+    badge.className = 'status-badge paused';
+    document.getElementById('statusText').textContent = 'Paused';
+    document.getElementById('timer').className = 'timer paused-state';
+
+    document.getElementById('actions').innerHTML = `
+      <button class="btn btn-primary" onclick="resumeRecording()">
+        <svg viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+        Resume
+      </button>
+      <button class="btn btn-stop" onclick="stopRecording()">
+        <svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="1"/></svg>
+        Stop
+      </button>
+    `;
+  }
+
+  function resumeRecording() {
+    if (!mediaRecorder || mediaRecorder.state !== 'paused') return;
+    mediaRecorder.resume();
+    startTime = Date.now();
+    startTimer();
+    setRecordingUI();
+  }
+
+  function stopRecording() {
+    if (!mediaRecorder || mediaRecorder.state === 'inactive') return;
+    mediaRecorder.stop();
+    clearInterval(timerInterval);
+    elapsedBeforePause += Date.now() - startTime;
+    cleanup();
+  }
+
+  function cleanup() {
+    if (screenStream) screenStream.getTracks().forEach(t => t.stop());
+    if (micStream) micStream.getTracks().forEach(t => t.stop());
+    screenStream = null;
+    micStream = null;
+  }
+
+  function showPreview() {
+    const badge = document.getElementById('statusBadge');
+    badge.className = 'status-badge';
+    document.getElementById('statusText').textContent = 'Done';
+    document.getElementById('timer').className = 'timer';
+    document.getElementById('optionsBar').style.display = '';
+    document.getElementById('actions').innerHTML = '';
+
+    const video = document.getElementById('previewVideo');
+    video.src = URL.createObjectURL(recordingBlob);
+    document.getElementById('previewSection').classList.add('visible');
+    document.getElementById('shareBar').classList.add('visible');
+  }
+
+  function downloadRecording() {
+    if (!recordingBlob) return;
+    const url = URL.createObjectURL(recordingBlob);
+    const a = document.createElement('a');
+    const ts = new Date().toISOString().slice(0, 19).replace(/[T:]/g, '-');
+    a.href = url;
+    a.download = `capturely-${ts}.webm`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  async function shareRecording() {
+    if (!recordingBlob || !navigator.canShare) return;
+    const ts = new Date().toISOString().slice(0, 19).replace(/[T:]/g, '-');
+    const file = new File([recordingBlob], `capturely-${ts}.webm`, { type: recordingBlob.type });
+    try {
+      await navigator.share({ files: [file], title: 'Screen Demo — Capturely' });
+    } catch (e) {
+      if (e.name !== 'AbortError') console.error('Share failed:', e);
+    }
+  }
+
+  function resetApp() {
+    recordingBlob = null;
+    recordedChunks = [];
+    elapsedBeforePause = 0;
+    document.getElementById('timer').textContent = '00:00';
+    document.getElementById('timer').className = 'timer';
+    const badge = document.getElementById('statusBadge');
+    badge.className = 'status-badge';
+    document.getElementById('statusText').textContent = 'Ready';
+    document.getElementById('previewSection').classList.remove('visible');
+    document.getElementById('shareBar').classList.remove('visible');
+    document.getElementById('optionsBar').style.display = '';
+    document.getElementById('actions').innerHTML = `
+      <button class="btn btn-primary" id="startBtn" onclick="startCapture()">
+        <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="7"/></svg>
+        Start Recording
+      </button>
+    `;
+  }
+
+  function startTimer() {
+    timerInterval = setInterval(() => {
+      const total = elapsedBeforePause + (Date.now() - startTime);
+      const secs = Math.floor(total / 1000);
+      const m = String(Math.floor(secs / 60)).padStart(2, '0');
+      const s = String(secs % 60).padStart(2, '0');
+      document.getElementById('timer').textContent = `${m}:${s}`;
+    }, 250);
+  }
+</script>
+
+</body>
+</html>
